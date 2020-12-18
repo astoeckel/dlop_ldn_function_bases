@@ -15,4 +15,3 @@ axes.spines.top:    False
 axes.spines.right:  False
 figure.titlesize: 9.0
 figure.titleweight: bold
-figure.dpi: 150
