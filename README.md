@@ -4,7 +4,7 @@ Andreas Stöckel, December 2020
 
 This repository contains a Jupyter notebook accompanying the technical report “Notes on Discrete Legendre Orthogonal Polynomials and the Legendre Delay Network Basis” (in preparation).
 
-## [📓 Open the Jupyter Notebook](compare_bases.ipynb)
+### [📓 Open the Jupyter Notebook](compare_bases.ipynb)
 
 ## License
 
