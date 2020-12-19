@@ -27,7 +27,7 @@ import dlop_ldn_function_bases as bases
 bases.mk_dlop_basis(q=6, N=20)
 ```
 
-Passing the array returned by one of the `mk_*_basis` functions through `lowpass_filter_basis` will ensure the the incomding `N` samples are optimally low-pass filtered to be represented by *q* = 6 coefficients.
+Passing the array returned by one of the `mk_*_basis` functions through `lowpass_filter_basis` will ensure the the incomding `N` samples are optimally low-pass filtered to be represented by *q* = 6 (Fourier) coefficients.
 
 
 ## License
