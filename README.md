@@ -10,7 +10,9 @@ This repository contains the Python code accompanying the technical report “No
 
 ## Usage
 
-First of all, if you want to integrate parts of this code into your own project, feel free to just copy-paste the portionts of the code you'll need. If you don't want to do this, simply install this package via `pip`. For example, run
+First of all, if you want to integrate parts of this code into your own project, feel free to just copy-paste the portionts of the code you'll need.
+
+If you don't want to do this, simply install this package via `pip`. For example, run
 
 ```sh
 pip3 install --user -e .
@@ -19,7 +21,7 @@ pip3 install --user -e .
 Depending on your environment, you may need to use `pip` instead of `pip3`. Also, if you're inside a virtual environment, you may not use the `--user` argument.
 
 After installation, you can simply import the `dlop_ldn_function_bases` package into your Python script. For example, the following Python code will generate a DLOP basis with *q* = 6 and *N* = 20.
-```
+```python
 import dlop_ldn_function_bases as bases
 
 bases.mk_dlop_basis(q=6, N=20)
