@@ -1,4 +1,4 @@
-# Notes on Discrete Legendre Orthogonal Polynomials and the Legendre Delay Network Basis ‒ Code Snippets
+# Code Generating Discrete Legendre Orthogonal Polynomials and the Legendre Delay Network Basis
 
 Andreas Stöckel, December 2020
 
