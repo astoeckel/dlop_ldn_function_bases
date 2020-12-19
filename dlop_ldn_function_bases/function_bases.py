@@ -27,7 +27,7 @@ def mk_ldn_lti(q, dtype=np.float):
     Divide the returned matrices by the desired window length theta.
 
     See Aaron R. Voelker's PhD thesis for more information:
-    https://hdl.handle.net/10012/14625 (Section 6.1.3, p. 134)   
+    https://hdl.handle.net/10012/14625 (Section 6.1.3, p. 134)
     """
     qs = np.arange(q)
     A = -np.ones((q, q), dtype=dtype)
@@ -125,7 +125,7 @@ def mk_dlop_basis_naive(q, N=None):
     In each iteration i, this function adds a new polynomial of degree i to the
     set of already computed polynomials. The polynomial coefficients are
     determined by solving for coefficients that generate discrete sample points
-    that are orthogonal to the already sampled sample points.
+    that are orthogonal to the already sampled basis vectors.
 
     The returned basis is made orthogonal by dividing by the norm of each
     discrete polynomial.

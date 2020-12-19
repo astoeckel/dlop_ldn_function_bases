@@ -2,11 +2,31 @@
 
 Andreas Stöckel, December 2020
 
-This repository contains the Python code accompanying the technical report “Notes on Discrete Legendre Orthogonal Polynomials and the Legendre Delay Network Basis” (in preparation). If you want to use parts of this code in your own project, I encourage you to just copy and paste the functions that you are interested in.
+This repository contains the Python code accompanying the technical report “Notes on Discrete Legendre Orthogonal Polynomials and the Legendre Delay Network Basis” (in preparation).
 
-### [📝 Read the code](function_bases.py)
+### [📝 Read the code](dlop_ldn_function_bases/function_bases.py)
 
 ### [📓 Open the Jupyter Notebook](compare_bases.ipynb)
+
+## Usage
+
+First of all, if you want to integrate parts of this code into your own project, feel free to just copy-paste the portionts of the code you'll need. If you don't want to do this, simply install this package via `pip`. For example, run
+
+```sh
+pip3 install --user -e .
+```
+
+Depending on your environment, you may need to use `pip` instead of `pip3`. Also, if you're inside a virtual environment, you may not use the `--user` argument.
+
+After installation, you can simply import the `dlop_ldn_function_bases` package into your Python script. For example, the following Python code will generate a DLOP basis with *q* = 6 and *N* = 20.
+```
+import dlop_ldn_function_bases as bases
+
+bases.mk_dlop_basis(q=6, N=20)
+```
+
+Passing the array returned by one of the `mk_*_basis` functions through `lowpass_filter_basis` will ensure the the incomding `N` samples are optimally low-pass filtered to be represented by *q* = 6 coefficients.
+
 
 ## License
 
