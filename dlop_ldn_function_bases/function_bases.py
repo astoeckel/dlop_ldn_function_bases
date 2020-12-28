@@ -102,7 +102,7 @@ def mk_leg_basis(q, N=None):
     Creates a non-orthogonal basis by simply sampling the Legendre polynomials.
     """
     N, q = int(q) if N is None else int(N), int(q)
-    xs = np.linspace(1, -1, N)
+    xs = np.linspace(1 - 0.5 / N, -1 + 0.5 / N, N)
     res = np.zeros((q, N))
     for i in range(q):
         res[i] = np.polynomial.Legendre([0] * i + [1])(xs)
