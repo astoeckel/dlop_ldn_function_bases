@@ -135,7 +135,7 @@ def mk_dlop_basis_naive(q, N=None):
     qs, Ns = np.arange(q), np.arange(N)
     xs = 2.0 * Ns / (N - 1.0) - 1.0
 
-    # Evaluate the individual monomials
+    # Evaluate the individual monomials (this is a Vandermonde matrix)
     M = np.power(xs[:, None], qs[None, :])
 
     # Create the matrix. The first basis vector is "all ones"
