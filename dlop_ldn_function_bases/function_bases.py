@@ -172,13 +172,10 @@ def mk_dlop_basis(q, N=None):
     function will likely not fit into 32- or 64-bit integers; so be careful
     when porting this code to a different programing language.
     """
-    def fading_factorial(K, m, m0=0):
-        # Fading factorial as defined in the paper. The optional m0 parameter
-        # defines how many terms are skipped at the beginning. m0 makes
-        # computing the corrective factor in the numerator below a little
-        # simpler.
+    def fading_factorial(K, m):
+        # Fading factorial as defined in the paper.
         res = 1
-        for i in range(m0, m):
+        for i in range(m):
             res *= K - i
         return res
 
@@ -206,7 +203,7 @@ def mk_dlop_basis(q, N=None):
                 # common denominator.
                 c = nCr(m, j) * nCr(m + j, j) * \
                    fading_factorial(K, j) * \
-                   fading_factorial(N - 1, m, j)
+                   fading_factorial(N - 1 - j, m - j)
                 numer += c if (j % 2 == 0) else -c
             res[m, K] = numer / denom
         res[m]
