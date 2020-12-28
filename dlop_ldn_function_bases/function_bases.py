@@ -69,7 +69,7 @@ def mk_ldn_basis_naive(q, N=None):
     
     For reference only, DO NOT USE. Use `mk_ldn_basis` instead.
     """
-    N = q if N is None else N
+    N, q = int(q) if N is None else int(N), int(q)
     A, B = mk_ldn_lti(q)
     At, Bt = A / N + np.eye(q), B / N
     T = np.zeros((q, N))
@@ -84,7 +84,7 @@ def mk_ldn_basis(q, N=None):
     """
     Generates the LDN basis for q basis vectors and N input samples.
     """
-    N = q if N is None else N
+    N, q = int(q) if N is None else int(N), int(q)
     At, Bt = discretize_lti(1.0 / N, *mk_ldn_lti(q))
     T = np.zeros((q, N))
     Aexp = np.eye(q)
@@ -101,7 +101,7 @@ def mk_leg_basis(q, N=None):
     """
     Creates a non-orthogonal basis by simply sampling the Legendre polynomials.
     """
-    N = q if N is None else N
+    N, q = int(q) if N is None else int(N), int(q)
     xs = np.linspace(1, -1, N)
     res = np.zeros((q, N))
     for i in range(q):
@@ -131,7 +131,7 @@ def mk_dlop_basis_naive(q, N=None):
     discrete polynomial.
     """
     # Construct the sample points
-    N = q if N is None else N
+    N, q = int(q) if N is None else int(N), int(q)
     qs, Ns = np.arange(q), np.arange(N)
     xs = 2.0 * Ns / (N - 1.0) - 1.0
 
@@ -188,7 +188,7 @@ def mk_dlop_basis(q, N=None):
         return fading_factorial(n, r) // \
                fading_factorial(r, r)
 
-    N = q if N is None else N
+    N, q = int(q) if N is None else int(N), int(q)
     res = np.zeros((q, N))
     for m in range(q):
         # Usa a common denominator instead of dividing by
@@ -230,7 +230,7 @@ def mk_fourier_basis(q, N=None):
     matrix is normalized to be orthogonal.  So be careful when comparing the
     results of this function to "standard" Fourier transformations.
     """
-    N = q if N is None else N
+    N, q = int(q) if N is None else int(N), int(q)
     qs, Ns = np.arange(q)[:, None], np.arange(N)[None, :]
     freq = ((qs + 1) // 2)  # 0, 1, 1, 2, 2, ...
     phase = (qs % 2)  # 0, 1, 0, 1, 0, ...
@@ -249,7 +249,7 @@ def mk_cosine_basis(q, N=None):
     `mk_fourier_basis` function above, this code only returns a canonical
     DCT basis if q = N.
     """
-    N = q if N is None else N
+    N, q = int(q) if N is None else int(N), int(q)
     qs, Ns = np.arange(q)[:, None], np.arange(N)[None, :]
     C = np.cos((Ns + 0.5) / N * qs * np.pi)
     C[0] /= np.sqrt(2)
