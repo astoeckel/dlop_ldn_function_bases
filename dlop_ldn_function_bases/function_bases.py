@@ -109,7 +109,7 @@ def mk_leg_basis(q, N=None):
     return res / np.linalg.norm(res, axis=1)[:, None]
 
 
-def mk_dlop_basis_naive(q, N=None):
+def mk_dlop_basis_linsys(q, N=None):
     """
     Constructs a matrix of "Discrete Legendre Orthogonal Polynomials" (DLOPs).
     q is the number of polynomials to generate, N is the number of samples for
@@ -157,7 +157,7 @@ def mk_dlop_basis_naive(q, N=None):
     return res / np.linalg.norm(res, axis=1)[:, None]
 
 
-def mk_dlop_basis(q, N=None):
+def mk_dlop_basis_direct(q, N=None):
     """
     Slow, direct implementation of the DLOP basis according to
 
@@ -210,6 +210,80 @@ def mk_dlop_basis(q, N=None):
 
     return res / np.linalg.norm(res, axis=1)[:, None]
 
+
+def mk_dlop_basis_recurrence(q, N=None):
+    """
+    Computes the DLOP basis using the Legendre recurrence relation as described
+    in the section "Generation Scheme" of Neuman & Schonbach, 1974, pp. 758-759
+    (see above for the full reference).
+
+    Do NOT use this function. This function is numerically unstable and only
+    included as a reference. Use `mk_dlop_basis` instead
+    """
+
+    # Fill the first rows
+    N, q = int(q) if N is None else int(N), int(q)
+    res = np.zeros((q, N))
+    if q > 0:
+        res[0] = np.ones(N)
+    if q > 1:
+        res[1] = np.linspace(1, -1, N)
+
+    # Iterate over all columns
+    for K in range(N):
+        # Compute the initial coefficients for the recurrence relation
+        c0, c1, c2 = 0, N - 2 * K - 1, N - 1
+        δ0, δ1, δ2 = N - 1, 2 * c1, N - 1
+        for m in range(2, q):
+            δ0, δ1, δ2 = δ0 + 2, δ1, δ2 - 2
+            c0, c1, c2 = c0 + δ0, c1 + δ1, c2 + δ2
+            res[m, K] = (c1 * res[m - 1, K] - c0 * res[m - 2, K]) / c2
+
+    return res / np.linalg.norm(res, axis=1)[:, None]
+
+def mk_dlop_basis(q, N=None, eps=1e-7):
+    """
+    Same as `mk_dlop_basis_recurrence`, but updates all columns at once using
+    numpy.
+    """
+
+    # Fill the first rows
+    N, q = int(q) if N is None else int(N), int(q)
+    res = np.zeros((q, N))
+    if q > 0:
+        res[0] = np.ones(N) / np.sqrt(N)
+    if q > 1:
+        res[1] = np.linspace(1, -1, N) / np.sqrt(N * (N + 1) / (3 * N - 3))
+
+    # Pre-compute the coefficients c0, c1. See Section 4.4 of the TR.
+    Ks = np.arange(0, N, dtype=np.float)[None, :]
+    ms = np.arange(2, q, dtype=np.float)[:, None]
+    n0s = np.sqrt(  ((2 * ms + 1) * (N - ms) * (N - ms + 1)) \
+                  / ((2 * ms - 3) * (N + ms) * (N + ms - 1)))
+    n1s = np.sqrt(  ((2 * ms + 1) * (N - ms)) \
+                  / ((2 * ms - 1) * (N + ms)))
+    c0s = n0s * ((ms - 1) * (N + ms - 1) / (ms * (N - ms)))
+    c1s = n1s * ((2 * ms - 1) * (N - 2 * Ks - 1) / (ms * (N - ms)))
+
+    # The mask is used to mask out columns that cannot become greater than one
+    # again. This prevents numerical instability.
+    mask = np.ones((q, N), dtype=np.bool)
+
+    # Evaluate the recurrence relation
+    for m in range(2, q):
+        # A column K can only become greater than zero, if one of the
+        # cells in the two previous rows was significantly greater than zero.
+        mask[m] = np.logical_or(mask[m - 1], mask[m - 2])
+
+        # Apply the recurrence relation. The factors c1s and c0s already contain
+        # the normalisation factors.
+        res[m] = (  (c1s[m - 2]) * res[m - 1] \
+                  - (c0s[m - 2]) * res[m - 2]) * mask[m]
+
+        # Mask out cells that were smaller than some epsilon
+        mask[m] = np.abs(res[m]) > eps
+
+    return res
 
 ## Fourier and Cosine Basis
 
