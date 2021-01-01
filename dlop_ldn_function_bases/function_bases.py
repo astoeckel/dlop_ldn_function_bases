@@ -72,12 +72,12 @@ def mk_ldn_basis_naive(q, N=None):
     N, q = int(q) if N is None else int(N), int(q)
     A, B = mk_ldn_lti(q)
     At, Bt = A / N + np.eye(q), B / N
-    T = np.zeros((q, N))
+    res = np.zeros((q, N))
     Aexp = np.eye(q)
     for i in range(N):
-        T[:, q - i - 1] = Aexp @ Bt
+        res[:, q - i - 1] = Aexp @ Bt
         Aexp = At @ Aexp
-    return T
+    return res / np.linalg.norm(res, axis=1)[:, None]
 
 
 def mk_ldn_basis(q, N=None):
@@ -86,12 +86,12 @@ def mk_ldn_basis(q, N=None):
     """
     N, q = int(q) if N is None else int(N), int(q)
     At, Bt = discretize_lti(1.0 / N, *mk_ldn_lti(q))
-    T = np.zeros((q, N))
+    res = np.zeros((q, N))
     Aexp = np.eye(q)
     for i in range(N):
-        T[:, N - i - 1] = Aexp @ Bt
+        res[:, N - i - 1] = Aexp @ Bt
         Aexp = At @ Aexp
-    return T
+    return res / np.linalg.norm(res, axis=1)[:, None]
 
 
 ## Discrete Legendre Orthogonal Polynomial Basis and Related Code
