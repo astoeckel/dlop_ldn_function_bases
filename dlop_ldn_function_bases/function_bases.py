@@ -62,7 +62,7 @@ def discretize_lti(dt, A, B):
 ## Legendre Delay Network Basis
 
 
-def mk_ldn_basis_naive(q, N=None):
+def mk_ldn_basis_naive(q, N=None, normalize=True):
     """
     This function is the attempt at generating a LDN basis using naive Euler
     integration. This produces horribly wrong results.
@@ -77,12 +77,14 @@ def mk_ldn_basis_naive(q, N=None):
     for i in range(N):
         res[:, q - i - 1] = Aexp @ Bt
         Aexp = At @ Aexp
-    return res / np.linalg.norm(res, axis=1)[:, None]
+    return (res / np.linalg.norm(res, axis=1)[:, None]) if normalize else res
 
 
-def mk_ldn_basis(q, N=None):
+def mk_ldn_basis(q, N=None, normalize=True):
     """
-    Generates the LDN basis for q basis vectors and N input samples.
+    Generates the LDN basis for q basis vectors and N input samples.  Set
+    `normalize` to `False` to obtain the exact LDN impulse response, otherwise
+    a normalized basis transformation matrix as defined in the TR is returned.
     """
     N, q = int(q) if N is None else int(N), int(q)
     At, Bt = discretize_lti(1.0 / N, *mk_ldn_lti(q))
@@ -91,7 +93,7 @@ def mk_ldn_basis(q, N=None):
     for i in range(N):
         res[:, N - i - 1] = Aexp @ Bt
         Aexp = At @ Aexp
-    return res / np.linalg.norm(res, axis=1)[:, None]
+    return (res / np.linalg.norm(res, axis=1)[:, None]) if normalize else res
 
 
 ## Discrete Legendre Orthogonal Polynomial Basis and Related Code
