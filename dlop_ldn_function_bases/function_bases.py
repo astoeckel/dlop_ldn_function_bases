@@ -247,6 +247,7 @@ def mk_dlop_basis_recurrence(q, N=None):
 
     return res / np.linalg.norm(res, axis=1)[:, None]
 
+
 def mk_dlop_basis(q, N=None, eps=1e-7):
     """
     Same as `mk_dlop_basis_recurrence`, but updates all columns at once using
@@ -289,6 +290,7 @@ def mk_dlop_basis(q, N=None, eps=1e-7):
         mask[m] = np.abs(res[m]) > eps
 
     return res
+
 
 ## Fourier and Cosine Basis
 
