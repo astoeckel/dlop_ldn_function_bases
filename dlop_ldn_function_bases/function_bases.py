@@ -334,6 +334,21 @@ def mk_cosine_basis(q, N=None):
     return C * np.sqrt(2 / N)
 
 
+def mk_haar_basis(q, N=None):
+    """
+    Generates the Haar wavelets. Note that N must be a power of two.
+    """
+    q, N = int(q), int(q) if N is None else int(N)
+    assert (2**int(np.log2(N))) == N
+    H = np.array(((1, 1), (1, -1)))
+    while (H.shape[1] < N):
+        H = np.concatenate((
+            np.kron(H, [1, 1]),
+            np.kron(np.eye(H.shape[0]), [1, -1]),
+        ))
+    return H[:q] / np.linalg.norm(H[:q], axis=1)[:, None]
+
+
 ## Low-pass filtered bases
 
 
