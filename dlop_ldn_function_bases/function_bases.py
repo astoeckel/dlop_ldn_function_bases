@@ -59,6 +59,46 @@ def discretize_lti(dt, A, B):
     return Ad, Bd
 
 
+def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-4):
+    """
+    Given a discrete q x N basis transformation matrix H constructs a linear
+    time-invariant dynamical system A, B that approximately has this basis
+    as an impulse response over [0, T].
+
+    If "dampen" is not False, an appropriately weighted dampening term is added
+    to the system of equations. This term is meant to encourage the resulting
+    system to converge to zero for t > T, but this is not guaranteed. "dampen"
+    may be set to a numeric value to tune the weight of the dampening factor (
+    True evaluates to a weight of one).
+    """
+    # Fetch the number of state dimensions and the number of samples
+    q, N = H.shape
+
+    # Construct the least squares problem. If dampen is True, prepend a row of
+    # zeros to the system. This dampening factor is weightened in the linear
+    # system of equations to maintain a ratio of 1 : (q - 1) between the
+    # dampening term and the remaining weights.
+    if dampen:
+        X = H.T
+        Y = np.concatenate((np.zeros((q, 1)), H[:, :-1]), axis=1).T
+        w0 = np.sqrt(float(dampen) * (N - 1) / (q - 1))
+        W = np.array([w0] + [1] * (N - 1))
+    else:
+        X = H[:, 1:].T
+        Y = H[:, :-1].T
+        W = np.ones(N - 1)
+
+    # Estimate the discrete system At, Bt
+    At = np.linalg.lstsq(W[:, None] * X, W[:, None] * Y, rcond=rcond)[0].T
+    Bt = H[:, -1]
+
+    # Undo discretization (this is the inverse of discretize_lti)
+    A = scipy.linalg.logm(At) * N / T
+    B = np.linalg.solve(At - np.eye(q), A @ Bt) / T
+
+    return A, B
+
+
 ## Legendre Delay Network Basis
 
 
