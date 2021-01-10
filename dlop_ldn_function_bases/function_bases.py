@@ -93,7 +93,7 @@ def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-4):
     Bt = H[:, -1]
 
     # Undo discretization (this is the inverse of discretize_lti)
-    A = scipy.linalg.logm(At) * N / T
+    A = np.real(scipy.linalg.logm(At)) * N / T
     B = np.linalg.solve(At - np.eye(q), A @ Bt) / T
 
     return A, B
