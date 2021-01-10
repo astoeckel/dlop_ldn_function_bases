@@ -59,7 +59,7 @@ def discretize_lti(dt, A, B):
     return Ad, Bd
 
 
-def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-4):
+def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-2):
     """
     Given a discrete q x N basis transformation matrix H constructs a linear
     time-invariant dynamical system A, B that approximately has this basis
