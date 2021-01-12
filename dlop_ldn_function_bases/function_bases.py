@@ -414,21 +414,21 @@ def mk_haar_basis(q, N=None):
 ## Low-pass filtered bases
 
 
-def lowpass_filter_basis(T, ratio=1.0, filter_ctor=mk_fourier_basis):
+def lowpass_filter_basis(T, qp=None, filter_ctor=mk_fourier_basis):
     """
     Takes a basis T with shape q x N and returns a basis that additionally
     applies a low-pass filter to the N-dimensional input, such that the input
-    is represented by (ratio * q) Fourier coefficients. This is equivalent to
+    is represented by qp Fourier coefficients. This is equivalent to
     low-pass filtering the basis T itself, i.e., representing the discrete
     basis functions in terms of the Fourier basis.
 
-    This function has no effect if (ratio * q) = N; in this case, there is no
+    This function has no effect if qp = N; in this case, there is no
     potential for information loss.
 
     The "filter_ctor" parameter can be used to represent the given basis T in
     terms of another function basis.
     """
-    q, N = T.shape
-    F = filter_ctor(int(ratio * q), N)
+    (q, N), qp = T.shape, (T.shape[0] if qp is None else int(qp))
+    F = filter_ctor(qp, N)
     return T @ np.linalg.pinv(F) @ F
 
