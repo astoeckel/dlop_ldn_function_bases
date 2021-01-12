@@ -65,6 +65,8 @@ def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-2):
     time-invariant dynamical system A, B that approximately has this basis
     as an impulse response over [0, T].
 
+    This function can be thought of as the inverse of mk_lti_basis.
+
     If "dampen" is not False, an appropriately weighted dampening term is added
     to the system of equations. This term is meant to encourage the resulting
     system to converge to zero for t > T, but this is not guaranteed. "dampen"
@@ -99,6 +101,33 @@ def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-2):
     return A, B
 
 
+def mk_lti_basis(A, B, N=None, normalize=True):
+    """
+    Constructs a basis transformation matrix for the given LTI system. This
+    function is used internally by mk_ldn_basis.
+    """
+    # Make sure A is a square matrix
+    assert (A.ndim == 2) and (A.shape[0] == A.shape[1])
+    q = A.shape[0]
+
+    # Make sure B has the right shape
+    B = B.flatten()
+    assert (B.shape[0] == q)
+
+    # Fetch the number of samples
+    N = q if N is None else int(N)
+    assert N > 0
+
+    # Generate the impulse response matrix
+    At, Bt = discretize_lti(1.0 / N, A, B)
+    res = np.zeros((q, N))
+    Aexp = np.eye(q)
+    for i in range(N):
+        res[:, N - i - 1] = Aexp @ Bt
+        Aexp = At @ Aexp
+    return (res / np.linalg.norm(res, axis=1)[:, None]) if normalize else res
+
+
 ## Legendre Delay Network Basis
 
 
@@ -126,14 +155,7 @@ def mk_ldn_basis(q, N=None, normalize=True):
     `normalize` to `False` to obtain the exact LDN impulse response, otherwise
     a normalized basis transformation matrix as defined in the TR is returned.
     """
-    q, N = int(q), int(q) if N is None else int(N)
-    At, Bt = discretize_lti(1.0 / N, *mk_ldn_lti(q))
-    res = np.zeros((q, N))
-    Aexp = np.eye(q)
-    for i in range(N):
-        res[:, N - i - 1] = Aexp @ Bt
-        Aexp = At @ Aexp
-    return (res / np.linalg.norm(res, axis=1)[:, None]) if normalize else res
+    return mk_lti_basis(*mk_ldn_lti(q), N, normalize)
 
 
 ## Discrete Legendre Orthogonal Polynomial Basis and Related Code

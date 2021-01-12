@@ -16,6 +16,7 @@ from .function_bases import (
     mk_ldn_lti,
     discretize_lti,
     reconstruct_lti,
+    mk_lti_basis,
     mk_ldn_basis_naive,
     mk_ldn_basis,
     mk_leg_basis,
