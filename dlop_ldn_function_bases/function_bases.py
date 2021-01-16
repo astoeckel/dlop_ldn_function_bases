@@ -398,17 +398,24 @@ def mk_cosine_basis(q, N=None):
 
 def mk_haar_basis(q, N=None):
     """
-    Generates the Haar wavelets. Note that N must be a power of two.
+    Generates the Haar wavelets. Note that the resulting matrix is not
+    orthogonal exactly if N is not a power of two.
     """
+    def subdiv(r0, r1):
+        if r1 - r0 > 0:
+            c = r0 + (r1 - r0 + 1) // 2
+            yield (r0, c, r1)
+            for L, R in zip(subdiv(r0, c), subdiv(c, r1)):
+                yield L
+                yield R
+
     q, N = int(q), int(q) if N is None else int(N)
-    assert (2**int(np.log2(N))) == N
-    H = np.array(((1, 1), (1, -1)))
-    while (H.shape[1] < N):
-        H = np.concatenate((
-            np.kron(H, [1, 1]),
-            np.kron(np.eye(H.shape[0]), [1, -1]),
-        ))
-    return H[:q] / np.linalg.norm(H[:q], axis=1)[:, None]
+    res = np.zeros((q, N))
+    res[0] = 1
+    for q, (i0, i1, i2) in zip(range(1, q), subdiv(0, N)):
+        res[q, i0:i1] = 1
+        res[q, i1:i2] = -1
+    return res / np.linalg.norm(res, axis=1)[:, None]
 
 
 ## Low-pass filtered bases
