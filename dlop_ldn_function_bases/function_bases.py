@@ -59,7 +59,7 @@ def discretize_lti(dt, A, B):
     return Ad, Bd
 
 
-def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-2):
+def reconstruct_lti(H, T=1.0, dampen=False, return_discrete=False, rcond=1e-2, dampen_fac=1.0):
     """
     Given a discrete q x N basis transformation matrix H constructs a linear
     time-invariant dynamical system A, B that approximately has this basis
@@ -67,23 +67,48 @@ def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-2):
 
     This function can be thought of as the inverse of mk_lti_basis.
 
-    If "dampen" is not False, an appropriately weighted dampening term is added
-    to the system of equations. This term is meant to encourage the resulting
-    system to converge to zero for t > T, but this is not guaranteed. "dampen"
-    may be set to a numeric value to tune the weight of the dampening factor (
-    True evaluates to a weight of one).
+    H: Basis transformation matrix for which the LTI system should be
+        reconstructed.
+
+    dampen: Determines the dampening mode. If not False (default), dampen may
+        be one of "lstsq" or "delay". Furthermore, "dampen" may be a set
+        containing both strings. Both methods will be used in this case.
+        Lastly, dampen can be set to True, which is equivalent to "delay".
+
+        In "lstsq" mode, an appropriately weighted dampening term is added to
+        the system of equations. This term is meant to encourage the resulting
+        system to converge to zero for t > T, but this is not guaranteed.
+
+        In "erasure" mode the system is dampened by explicitly erasing
+        information beyond the current time-window.
+
+    return_discrete: If True, returns the discreteized LTI system; does not
+        attempt to convert the system into a continuous system.
+
+    rcond: Regularisation term passed to the least-squares solver.
+
+    dampen_fac: Factor used to weight the dampening term in the least-squares
+        solution. Only relevant if `dampen` is set to "lstsq".
     """
     # Fetch the number of state dimensions and the number of samples
     q, N = H.shape
+
+    # Canonicalise "dampen"
+    if dampen and isinstance(dampen, str):
+        dampen = {dampen}
+    elif isinstance(dampen, bool):
+        dampen = {"erasure"} if dampen else set()
+    if (not isinstance(dampen, set)) or (len(dampen - {"lstsq", "erasure"}) > 0):
+        raise RuntimeError("Invalid value for \"dampen\"")
 
     # Construct the least squares problem. If dampen is True, prepend a row of
     # zeros to the system. This dampening factor is weightened in the linear
     # system of equations to maintain a ratio of 1 : (q - 1) between the
     # dampening term and the remaining weights.
-    if dampen:
+    if "lstsq" in dampen:
         X = H.T
         Y = np.concatenate((np.zeros((q, 1)), H[:, :-1]), axis=1).T
-        w0 = np.sqrt(float(dampen) * (N - 1) / (q - 1))
+        w0 = np.sqrt(dampen_fac * (N - 1) / (q - 1))
         W = np.array([w0] + [1] * (N - 1))
     else:
         X = H[:, 1:].T
@@ -94,6 +119,17 @@ def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-2):
     At = np.linalg.lstsq(W[:, None] * X, W[:, None] * Y, rcond=rcond)[0].T
     Bt = H[:, -1]
 
+    # In "delay mode" subtract the outer product of the longest delay
+    # decoder/encoder pair from the state in each timestep
+    if "delay" in dampen:
+        enc, dec = enc, dec = H[:, 0], np.linalg.pinv(H)[0]
+        At = At - np.outer(enc, dec) @ At
+        Bt = Bt - np.outer(enc, dec) @ Bt
+
+    # If so desired, return the discrete system
+    if return_discrete:
+        return At, Bt
+
     # Undo discretization (this is the inverse of discretize_lti)
     A = np.real(scipy.linalg.logm(At)) * N / T
     B = np.linalg.solve(At - np.eye(q), A @ Bt) / T
@@ -101,7 +137,7 @@ def reconstruct_lti(H, T=1.0, dampen=False, rcond=1e-2):
     return A, B
 
 
-def mk_lti_basis(A, B, N=None, normalize=True):
+def mk_lti_basis(A, B, N=None, normalize=True, from_discrete_lti=False):
     """
     Constructs a basis transformation matrix for the given LTI system. This
     function is used internally by mk_ldn_basis.
@@ -119,7 +155,7 @@ def mk_lti_basis(A, B, N=None, normalize=True):
     assert N > 0
 
     # Generate the impulse response matrix
-    At, Bt = discretize_lti(1.0 / N, A, B)
+    At, Bt = (A, B) if from_discrete_lti else discretize_lti(1.0 / N, A, B)
     res = np.zeros((q, N))
     Aexp = np.eye(q)
     for i in range(N):
