@@ -167,7 +167,7 @@ def mk_lti_basis(A, B, N=None, normalize=True, from_discrete_lti=False):
 ## Legendre Delay Network Basis
 
 
-def mk_ldn_basis_naive(q, N=None, normalize=True):
+def mk_ldn_basis_euler(q, N=None, normalize=True):
     """
     This function is the attempt at generating a LDN basis using naive Euler
     integration. This produces horribly wrong results.
@@ -180,7 +180,7 @@ def mk_ldn_basis_naive(q, N=None, normalize=True):
     res = np.zeros((q, N))
     Aexp = np.eye(q)
     for i in range(N):
-        res[:, q - i - 1] = Aexp @ Bt
+        res[:, N - i - 1] = Aexp @ Bt
         Aexp = At @ Aexp
     return (res / np.linalg.norm(res, axis=1)[:, None]) if normalize else res
 

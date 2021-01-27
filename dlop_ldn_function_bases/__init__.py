@@ -17,7 +17,7 @@ from .function_bases import (
     discretize_lti,
     reconstruct_lti,
     mk_lti_basis,
-    mk_ldn_basis_naive,
+    mk_ldn_basis_euler,
     mk_ldn_basis,
     mk_leg_basis,
     mk_dlop_basis_linsys,
