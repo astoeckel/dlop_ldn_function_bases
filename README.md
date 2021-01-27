@@ -18,7 +18,7 @@ If you don't want to do this, simply install this package via `pip`. For example
 pip3 install --user -e .
 ```
 
-Depending on your environment, you may need to use `pip` instead of `pip3`. Also, if you're inside a virtual environment, you may not need to use the `--user` argument.
+Depending on your environment, you may need to use `pip` instead of `pip3`. Also, if you're inside a virtual environment, you may have to skip the `--user` argument.
 
 After installation, you can simply import the `dlop_ldn_function_bases` package into your Python script. For example, the following Python code will generate a DLOP basis with *q* = 6 and *N* = 20.
 ```python
