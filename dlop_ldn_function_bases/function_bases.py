@@ -15,28 +15,80 @@
 import numpy as np
 import scipy.linalg
 
-## Legendre Delay Network (LDN)
+## Utility functions
 
 
-def mk_ldn_lti(q, dtype=np.float):
+def fading_factorial(K, m):
+    # Fading factorial as defined in the Neuman and Schonbach paper
+    res = 1
+    for i in range(m):
+        res *= K - i
+    return res
+
+
+def nCr(n, r):
+    # Binomial coefficient (n choose r; nCr is what my trusty pocket
+    # calculator calls it).
+    return fading_factorial(n, r) // \
+           fading_factorial(r, r)
+
+
+## Polynomial generation
+
+
+def _shift_polys(P, domain=(0, 1), window=(-1, 1)):
     """
-    Generates the A, B matrices of the linear time-invariant (LTI) system
-    underlying the LDN. 
-
-    The returned A is a q x q matrix, the returned B is a vector of length q.
-    Divide the returned matrices by the desired window length theta.
-
-    See Aaron R. Voelker's PhD thesis for more information:
-    https://hdl.handle.net/10012/14625 (Section 6.1.3, p. 134)
+    Shifts and scales a polynomial basis from the source onto the target window
     """
-    qs = np.arange(q)
-    A = -np.ones((q, q), dtype=dtype)
-    for d in range(1, q, 2):  # iterate over odd diagonals
-        A[range(d, q), range(0, q - d)] = 1
-    B = np.ones((q, ), dtype=dtype)
-    B[1::2] = -1
-    return (2 * qs[:, None] + 1) * A, \
-           (2 * qs + 1) * B
+    from fractions import Fraction
+    s0, s1 = Fraction(domain[0]), Fraction(domain[1])
+    t0, t1 = Fraction(window[0]), Fraction(window[1])
+    a = (t1 - t0) / (s1 - s0)
+    b = t0 - a * s0
+    print(a, b)
+    Pout = np.zeros(P.shape)
+    for i in range(P.shape[0]):  # Polynomial basis index
+        for k in range(P.shape[1]):  # Coefficient index
+            beta = Fraction(0)
+            for n in range(k, P.shape[1]):
+                beta += nCr(n, k) * Fraction(P[i, n]) * (a**k) * (b**(n - k))
+            Pout[i, k] = beta
+    return Pout
+
+
+def _mk_poly_basis(q, fun):
+    P = np.zeros((q, q))
+    for i in range(q):
+        p = fun([0] * i + [1])
+        P[i, :len(p)] = p
+    return P
+
+
+def mk_power_poly_basis(q, domain=(0, 1), window=(-1, 1), offs=1.0, scale=0.5):
+    P = np.eye(q)
+    P[:, 0] = offs  # Constant offset
+    return _shift_polys(scale * P, domain=domain, window=window)
+
+
+def mk_leg_poly_basis(q, domain=(0, 1), window=(-1, 1)):
+    return _shift_polys(_mk_poly_basis(q, np.polynomial.legendre.leg2poly),
+                        domain=domain,
+                        window=window)
+
+
+def mk_lag_poly_basis(q, domain=(0, 1), window=(0, 1)):
+    return _shift_polys(_mk_poly_basis(q, np.polynomial.laguerre.lag2poly),
+                        domain=domain,
+                        window=window)
+
+
+def mk_cheb_poly_basis(q, domain=(0, 1), window=(-1, 1)):
+    return _shift_polys(_mk_poly_basis(q, np.polynomial.chebyshev.cheb2poly),
+                        domain=domain,
+                        window=window)
+
+
+## Generic LTI Code
 
 
 def discretize_lti(dt, A, B):
@@ -59,7 +111,12 @@ def discretize_lti(dt, A, B):
     return Ad, Bd
 
 
-def reconstruct_lti(H, T=1.0, dampen=False, return_discrete=False, rcond=1e-2, dampen_fac=1.0):
+def reconstruct_lti(H,
+                    T=1.0,
+                    dampen=False,
+                    return_discrete=False,
+                    rcond=1e-2,
+                    dampen_fac=1.0):
     """
     Given a discrete q x N basis transformation matrix H constructs a linear
     time-invariant dynamical system A, B that approximately has this basis
@@ -98,7 +155,8 @@ def reconstruct_lti(H, T=1.0, dampen=False, return_discrete=False, rcond=1e-2, d
         dampen = {dampen}
     elif isinstance(dampen, bool):
         dampen = {"erasure"} if dampen else set()
-    if (not isinstance(dampen, set)) or (len(dampen - {"lstsq", "erasure"}) > 0):
+    if (not isinstance(dampen,
+                       set)) or (len(dampen - {"lstsq", "erasure"}) > 0):
         raise RuntimeError("Invalid value for \"dampen\"")
 
     # Construct the least squares problem. If dampen is True, prepend a row of
@@ -162,6 +220,147 @@ def mk_lti_basis(A, B, N=None, normalize=True, from_discrete_lti=False):
         res[:, N - i - 1] = Aexp @ Bt
         Aexp = At @ Aexp
     return (res / np.linalg.norm(res, axis=1)[:, None]) if normalize else res
+
+
+def mk_poly_basis_lti(P, rcond=None, dampen=False, reencoder_kw={}):
+    """
+    Converts a set of polynomials into the corresponding LTI system.
+
+    P is a matrix of polynomial coefficients i.e.,
+        p_n(x) = sum_{i = 0}^{q - 1} P_{n + 1, i + 1} x^i
+
+    The polynomials should form a function basis over [0, 1].
+    """
+    assert P.shape[0] == P.shape[1]
+    assert np.linalg.matrix_rank(P, tol=1e-6) == P.shape[0]
+    q = P.shape[0]
+
+    # Compute the differential of each polynomial
+    PD = np.concatenate((P[:, 1:], np.zeros(
+        (q, 1))), axis=1) * np.arange(1, q + 1)[None, :]
+
+    # Compute a matrix constructing the differential from the other polynomials
+    A = np.linalg.lstsq(P.T, PD.T, rcond=rcond)[0].T
+
+    # The x-intercept is equal to B
+    B = P[:, 0]
+
+    # If dampening is requested, subtract the delay re-encoder from A
+    return (A - mk_poly_basis_reencoder(P, **reencoder_kw) if dampen else A), B
+
+
+def mk_poly_sys_lti(A, B, dampen=True, reencoder_kw={}):
+    return (A -
+            mk_poly_sys_reencoder(A, B, **reencoder_kw) if dampen else A), B
+
+
+def mk_poly_basis_reencoder_hilbert(P):
+    # Flip the polynomials
+    N, q = P.shape
+    P_flip = _shift_polys(P, window=(1, 0))
+
+    # Evaluate the target polynomials at `theta - theta' = 0` and at `theta`
+    y = np.array([np.polyval(P[i, ::-1], 0) for i in range(N)])
+    e = np.array([np.polyval(P[i, ::-1], 1) for i in range(N)])
+
+    # Compute the inverse Hilbert matrix
+    QInv = scipy.linalg.invhilbert(P.shape[1])
+    return np.outer(e, np.linalg.solve(P.T, QInv @ np.linalg.inv(P_flip) @ y))
+
+
+def mk_poly_basis_inverse_hilbert(P, rcond=1e-6):
+    """
+    Computes a polynomial basis that is orthogonal to P over the interval
+    [0, 1].
+    """
+    N, q = P.shape
+    QInv = scipy.linalg.invhilbert(q)
+    return np.linalg.lstsq(P.T, QInv, rcond=rcond)[0]
+
+
+def mk_poly_basis_reencoder_hilbert_2(P, rcond=1e-6):
+    (N, _), PI = P.shape, mk_poly_basis_inverse_hilbert(P, rcond=rcond)
+    e, d = np.zeros((2, N))
+    for i in range(N):
+        e[i], d[i] = np.polyval(P[i], 1), np.polyval(PI[i], 1)
+    return np.outer(e, d)
+
+
+def mk_poly_basis_reencoder(P, rcond=1e-6, dt=1e-4):
+    N = int(
+        (1.0 + dt + 1e-12) / dt)  # #samples; 1e-12 prevents rounding errors
+    xs = np.linspace(0, 1, N)
+    H = np.array([np.polyval(P[i, ::-1], xs) for i in range(P.shape[0])])
+    HInv = np.linalg.pinv(H.T, rcond=rcond) / dt
+    return np.outer(H[:, -1], HInv[:, -1])
+
+
+def mk_poly_sys_reencoder(A, B, rcond=1e-6, dt=1e-4):
+    N = int(
+        (1.0 + dt + 1e-12) / dt)  # #samples; 1e-12 prevents rounding errors
+    xs = np.linspace(0, 1, N)
+    H = np.array([scipy.linalg.expm(A * xs[j]) @ B for j in range(N)]).T
+    HInv = np.linalg.pinv(H.T, rcond=rcond) / dt
+    return np.outer(H[:, -1], HInv[:, -1])
+
+
+## Legendre Delay Network (LDN)
+
+
+def mk_ldn_lti(q, dtype=np.float, rescale=False):
+    """
+    Generates the A, B matrices of the linear time-invariant (LTI) system
+    underlying the LDN.
+
+    The returned A is a q x q matrix, the returned B is a vector of length q.
+    Divide the returned matrices by the desired window length theta.
+
+    See Aaron R. Voelker's PhD thesis for more information:
+    https://hdl.handle.net/10012/14625 (Section 6.1.3, p. 134)
+
+    If `rescale` is True, a less numerically stable version of the LDN is
+    returned that exactly traces out the shifted Legendre polynomials,
+    including scaling factors.
+    """
+    qs = np.arange(q)
+    A = -np.ones((q, q), dtype=dtype)
+    for d in range(1, q, 2):  # iterate over odd diagonals
+        A[range(d, q), range(0, q - d)] = 1
+    B = np.ones((q, ), dtype=dtype)
+    B[1::2] = -1
+    if rescale:
+        return (2 * qs[None, :] + 1) * A, B
+    else:
+        return (2 * qs[:, None] + 1) * A, \
+               (2 * qs + 1) * B
+
+
+def mk_leg_lti(q, dtype=np.float):
+    """
+    Assembles an LTI system that has the Legendre polynomials as an impulse
+    response.
+    """
+    qs = np.arange(q)
+    A = np.zeros((q, q), dtype=dtype)
+    for d in range(1, q, 2):  # iterate over odd diagonals
+        A[range(d, q), range(0, q - d)] = 1
+    B = np.ones((q, ), dtype=dtype)
+    B[1::2] = -1
+    return (4 * qs[None, :] + 2) * A, B
+
+
+## Chebyshev LTI code
+
+
+def mk_cheb_lti(q, dtype=np.float):
+    qs = np.arange(q)
+    A = np.zeros((q, q), dtype=dtype)
+    for d in range(1, q, 2):  # iterate over odd diagonals
+        A[range(d + 1, q), range(1, q - d)] = 2
+        A[d, 0] = 1
+    B = np.ones((q, ), dtype=dtype)
+    B[1::2] = -1
+    return (2 * qs[:, None]) * A, B
 
 
 ## Legendre Delay Network Basis
@@ -274,19 +473,6 @@ def mk_dlop_basis_direct(q, N=None):
     function will likely not fit into 32- or 64-bit integers; so be careful
     when porting this code to a different programing language.
     """
-    def fading_factorial(K, m):
-        # Fading factorial as defined in the paper.
-        res = 1
-        for i in range(m):
-            res *= K - i
-        return res
-
-    def nCr(n, r):
-        # Binomial coefficient (n choose r; nCr is what my trusty pocket
-        # calculator calls it).
-        return fading_factorial(n, r) // \
-               fading_factorial(r, r)
-
     q, N = int(q), int(q) if N is None else int(N)
     res = np.zeros((q, N))
     for m in range(q):

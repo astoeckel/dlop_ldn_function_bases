@@ -13,7 +13,20 @@
 # This work is published from: Canada.
 
 from .function_bases import (
+    mk_power_poly_basis,
+    mk_leg_poly_basis,
+    mk_lag_poly_basis,
+    mk_cheb_poly_basis,
     mk_ldn_lti,
+    mk_leg_lti,
+    mk_cheb_lti,
+    mk_poly_basis_lti,
+    mk_poly_sys_lti,
+    mk_poly_basis_reencoder,
+    mk_poly_sys_reencoder,
+    mk_poly_basis_reencoder_hilbert,
+    mk_poly_basis_reencoder_hilbert_2,
+    mk_poly_basis_inverse_hilbert,
     discretize_lti,
     reconstruct_lti,
     mk_lti_basis,
