@@ -2,11 +2,13 @@
 
 Andreas Stöckel, December 2020
 
-This repository contains the Python code accompanying the technical report “Notes on Discrete Legendre Orthogonal Polynomials and the Legendre Delay Network Basis” (in preparation).
+This repository contains the Python code accompanying the technical report “[Discrete Function Bases and Convolutional Neural Networks](https://arxiv.org/abs/2103.05609)”
 
 ### [📝 Read the code](dlop_ldn_function_bases/function_bases.py)
 
 ### [📓 Open the Jupyter Notebook](compare_bases.ipynb)
+
+### [📒 Read the Technical Report](http://compneuro.uwaterloo.ca/files/publications/stoeckel.2021b.pdf)
 
 ## Usage
 
@@ -28,6 +30,12 @@ bases.mk_dlop_basis(q=6, N=20)
 ```
 
 Passing the array returned by one of the `mk_*_basis` functions through `lowpass_filter_basis` will ensure the the incomding `N` samples are optimally low-pass filtered to be represented by *q* = 6 (Fourier) coefficients.
+
+## Citation
+
+```
+Andreas Stöckel. Discrete function bases and convolutional neural networks. arXiv preprint arXiv:2103.05609, 2021. URL: https://arxiv.org/abs/2103.05609.```
+
 
 
 ## License
