@@ -38,7 +38,6 @@ Andreas Stöckel. Discrete function bases and convolutional neural networks.
 arXiv preprint arXiv:2103.05609, 2021.
 URL: https://arxiv.org/abs/2103.05609
 ```
-```
 
 
 ## License
