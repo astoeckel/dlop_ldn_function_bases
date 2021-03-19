@@ -33,11 +33,9 @@ Passing the array returned by one of the `mk_*_basis` functions through `lowpass
 
 ## Citation
 
-```
-Andreas Stöckel. Discrete function bases and convolutional neural networks.
-arXiv preprint arXiv:2103.05609, 2021.
+Andreas Stöckel. Discrete function bases and convolutional neural networks.  
+arXiv preprint arXiv:2103.05609, 2021.  
 URL: https://arxiv.org/abs/2103.05609
-```
 
 
 ## License
