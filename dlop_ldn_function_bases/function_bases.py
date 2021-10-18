@@ -128,7 +128,7 @@ def reconstruct_lti(H,
         reconstructed.
 
     dampen: Determines the dampening mode. If not False (default), dampen may
-        be one of "lstsq" or "delay". Furthermore, "dampen" may be a set
+        be one of "lstsq" or "erasure". Furthermore, "dampen" may be a set
         containing both strings. Both methods will be used in this case.
         Lastly, dampen can be set to True, which is equivalent to "delay".
 
@@ -179,7 +179,7 @@ def reconstruct_lti(H,
 
     # In "delay mode" subtract the outer product of the longest delay
     # decoder/encoder pair from the state in each timestep
-    if "delay" in dampen:
+    if "erasure" in dampen:
         enc, dec = enc, dec = H[:, 0], np.linalg.pinv(H)[0]
         At = At - np.outer(enc, dec) @ At
         Bt = Bt - np.outer(enc, dec) @ Bt
