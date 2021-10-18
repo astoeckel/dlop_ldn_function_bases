@@ -604,6 +604,22 @@ def mk_fourier_basis(q, N=None):
     return F * np.sqrt(2 / N)
 
 
+def mk_fourier_basis_derivative(q, N=None):
+    """
+    Returns the derivative of the Fourier series.
+    """
+    q, N = int(q), int(q) if N is None else int(N)
+    qs, Ns = np.arange(q)[:, None], np.arange(N)[None, :]
+    freq = ((qs + 1) // 2)  # 0, 1, 1, 2, 2, ...
+    phase = (qs % 2)  # 0, 1, 0, 1, 0, ...
+    F = -2.0 * np.pi * freq * np.sin(
+        2.0 * np.pi * freq * (Ns + 0.5) / N + \
+        0.5 * np.pi * phase)
+    F[0] /= np.sqrt(2)
+    F[-1] /= np.sqrt(2) if (q % 2 == 0 and N == q) else 1.0
+    return F * np.sqrt(2 / N)
+
+
 def mk_cosine_basis(q, N=None):
     """
     Generates the q x N matrix C which can be used to compute the orthogonal

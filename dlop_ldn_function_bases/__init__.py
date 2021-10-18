@@ -38,6 +38,7 @@ from .function_bases import (
     mk_dlop_basis_recurrence,
     mk_dlop_basis,
     mk_fourier_basis,
+    mk_fourier_basis_derivative,
     mk_cosine_basis,
     mk_haar_basis,
     lowpass_filter_basis,
